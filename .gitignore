@@ -6,3 +6,6 @@ __pycache__/
 .DS_Store
 *.pt
 *.onnx
+
+# 例外：Streamlit 部署需要這個模型檔（約 10MB，可直接放進 repo）
+!streamlit_app/best.pt
