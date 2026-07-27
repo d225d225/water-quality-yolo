@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>💧 瓦磘溝水質檢測</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-sky-50 to-blue-100 min-h-screen">
+
+  <div class="max-w-xl mx-auto px-4 py-10">
+
+    <!-- 標題 -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-blue-800">💧 瓦磘溝水質檢測</h1>
+      <p class="text-slate-500 mt-2">瓦磘溝行動研究社 × YOLOv8 影像分類</p>
+    </header>
+
+    <!-- 上傳卡片 -->
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+
+      <!-- 拖曳 / 點擊上傳區 -->
+      <label id="dropzone"
+        class="flex flex-col items-center justify-center border-2 border-dashed border-blue-300
+               rounded-xl h-56 cursor-pointer hover:bg-blue-50 transition text-center px-4">
+        <div id="dropHint">
+          <div class="text-5xl mb-2">📷</div>
+          <p class="text-slate-600 font-medium">點擊或拖曳照片到這裡</p>
+          <p class="text-slate-400 text-sm mt-1">支援 jpg / png</p>
+        </div>
+        <img id="preview" class="hidden max-h-52 rounded-lg object-contain" alt="預覽" />
+        <input id="fileInput" type="file" accept="image/*" class="hidden" />
+      </label>
+
+      <!-- 開始檢測按鈕 -->
+      <button id="detectBtn" disabled
+        class="w-full mt-5 bg-blue-600 text-white font-semibold py-3 rounded-xl
+               hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition">
+        開始檢測
+      </button>
+
+      <!-- 載入動畫 -->
+      <div id="loading" class="hidden mt-6 flex flex-col items-center">
+        <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <p class="text-slate-500 mt-3">AI 判斷中…</p>
+      </div>
+
+      <!-- 結果區 -->
+      <div id="result" class="hidden mt-6"></div>
+
+    </div>
+
+    <!-- 原理說明 -->
+    <details class="bg-white/70 rounded-xl mt-5 p-4 text-sm text-slate-600">
+      <summary class="cursor-pointer font-medium text-slate-700">📖 運作原理說明</summary>
+      <div class="mt-3 space-y-2">
+        <p>本系統用 <b>YOLOv8 影像分類模型</b> 判斷水質，分成三級：</p>
+        <ul class="list-disc pl-5">
+          <li>✅ 乾淨 → <b>5 分</b></li>
+          <li>⚠️ 混濁 → <b>3 分</b></li>
+          <li>❌ 髒 → <b>1 分</b></li>
+        </ul>
+        <p>若模型信心度過低（很可能不是水的照片），會提醒你重拍。此結果僅供教學參考，正式判定仍需專業儀器。</p>
+      </div>
+    </details>
+
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const preview   = document.getElementById('preview');
+    const dropHint  = document.getElementById('dropHint');
+    const dropzone  = document.getElementById('dropzone');
+    const detectBtn = document.getElementById('detectBtn');
+    const loading   = document.getElementById('loading');
+    const resultBox = document.getElementById('result');
+
+    let selectedFile = null;
+
+    // 選擇檔案 → 預覽
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        alert('請選擇圖片檔（jpg / png）');
+        return;
+      }
+      selectedFile = file;
+      preview.src = URL.createObjectURL(file);
+      preview.classList.remove('hidden');
+      dropHint.classList.add('hidden');
+      detectBtn.disabled = false;
+      resultBox.classList.add('hidden');
+    }
+
+    fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+    // 拖曳上傳
+    dropzone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropzone.classList.add('bg-blue-50');
+    });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('bg-blue-50'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('bg-blue-50');
+      handleFile(e.dataTransfer.files[0]);
+    });
+
+    // 分數對應顏色
+    const scoreStyle = {
+      5: { color: 'text-green-600',  bg: 'bg-green-50',  bar: 'bg-green-500' },
+      3: { color: 'text-yellow-600', bg: 'bg-yellow-50', bar: 'bg-yellow-500' },
+      1: { color: 'text-red-600',    bg: 'bg-red-50',    bar: 'bg-red-500' },
+    };
+
+    // 開始檢測
+    detectBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      resultBox.classList.add('hidden');
+      loading.classList.remove('hidden');
+      detectBtn.disabled = true;
+
+      try {
+        const form = new FormData();
+        form.append('file', selectedFile);
+
+        const resp = await fetch('/predict', { method: 'POST', body: form });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.detail || '伺服器發生錯誤');
+        }
+        const data = await resp.json();
+        showResult(data);
+      } catch (err) {
+        resultBox.innerHTML =
+          `<div class="bg-red-50 text-red-700 rounded-xl p-4 text-center">⚠️ ${err.message}</div>`;
+        resultBox.classList.remove('hidden');
+      } finally {
+        loading.classList.add('hidden');
+        detectBtn.disabled = false;
+      }
+    });
+
+    // 顯示結果
+    function showResult(data) {
+      resultBox.classList.remove('hidden');
+
+      // 非水體照片
+      if (!data.is_water) {
+        resultBox.innerHTML = `
+          <div class="bg-orange-50 border border-orange-200 rounded-xl p-5 text-center">
+            <div class="text-4xl mb-2">🤨</div>
+            <p class="text-orange-700 font-bold text-lg">${data.message}</p>
+            <p class="text-slate-400 text-sm mt-2">信心度：${(data.confidence*100).toFixed(1)}%（過低）</p>
+          </div>`;
+        return;
+      }
+
+      // 正常結果
+      const s = scoreStyle[data.score] || scoreStyle[3];
+      const conf = (data.confidence * 100).toFixed(1);
+
+      // 各類別機率長條
+      let bars = '';
+      const nameZh = { clean: '乾淨', turbid: '混濁', dirty: '髒' };
+      for (const [k, v] of Object.entries(data.probs || {})) {
+        const pct = (v * 100).toFixed(0);
+        bars += `
+          <div class="flex items-center gap-2 text-sm">
+            <span class="w-10 text-slate-500">${nameZh[k] || k}</span>
+            <div class="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
+              <div class="bg-blue-400 h-3" style="width:${pct}%"></div>
+            </div>
+            <span class="w-10 text-right text-slate-500">${pct}%</span>
+          </div>`;
+      }
+
+      resultBox.innerHTML = `
+        <div class="${s.bg} rounded-xl p-5 text-center">
+          <div class="text-5xl mb-1">${data.emoji}</div>
+          <p class="${s.color} text-2xl font-bold">${data.score} 分（${data.label_zh}）</p>
+          <p class="text-slate-400 text-sm">${data.label_en}</p>
+          <p class="text-slate-500 mt-2">最高信心度：<b>${conf}%</b></p>
+        </div>
+        <div class="mt-4 space-y-2">${bars}</div>`;
+    }
+  </script>
+</body>
+</html>

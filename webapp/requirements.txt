@@ -1,0 +1,10 @@
+# 瓦磘溝水質檢測 Web 應用 — 後端依賴
+# ── 版本相容性：ultralytics 8.x 需 numpy < 2.0 ──
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+ultralytics>=8.1.0,<8.4.0
+torch>=2.0.0
+torchvision>=0.15.0
+pillow>=10.0.0
+numpy>=1.24.0,<2.0.0
