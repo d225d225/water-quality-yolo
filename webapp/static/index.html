@@ -77,6 +77,11 @@
 
     let selectedFile = null;
 
+    // API 位置：透過 uvicorn 開啟時同源即可；若是直接打開檔案(file://)則指向本機後端
+    const API_BASE = (location.protocol === 'file:' || location.port === '8123')
+      ? 'http://localhost:8000'
+      : '';
+
     // 選擇檔案 → 預覽
     function handleFile(file) {
       if (!file || !file.type.startsWith('image/')) {
@@ -124,7 +129,7 @@
         const form = new FormData();
         form.append('file', selectedFile);
 
-        const resp = await fetch('/predict', { method: 'POST', body: form });
+        const resp = await fetch(API_BASE + '/predict', { method: 'POST', body: form });
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({}));
           throw new Error(err.detail || '伺服器發生錯誤');
