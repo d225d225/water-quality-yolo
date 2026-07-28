@@ -7,5 +7,6 @@ __pycache__/
 *.pt
 *.onnx
 
-# 例外：Streamlit 部署需要這個模型檔（約 10MB，可直接放進 repo）
+# 例外：部署需要這個模型檔（約 10MB，可直接放進 repo）
 !streamlit_app/best.pt
+!webapp/best.pt

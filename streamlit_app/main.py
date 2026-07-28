@@ -107,8 +107,8 @@ with st.expander("📖 運作原理說明（點我展開）", expanded=False):
 st.sidebar.header("⚙️ 設定")
 conf_threshold = st.sidebar.slider(
     "信心度門檻（Confidence Threshold）",
-    min_value=0.0, max_value=1.0, value=0.5, step=0.05,
-    help="低於這個信心度的預測會被標示為『不確定』，避免亂猜。",
+    min_value=0.0, max_value=1.0, value=0.35, step=0.05,
+    help="低於這個信心度的預測會被標示為『不確定』。本模型信心度普遍偏低，預設 0.35。",
 )
 
 # 載入模型
