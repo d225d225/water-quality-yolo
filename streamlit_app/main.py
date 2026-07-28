@@ -12,22 +12,6 @@ from PIL import Image
 from pathlib import Path
 import os
 
-# ── ⓪ 修正雲端 OpenCV：改用 headless 版（無 GUI 系統庫依賴）──────────
-# 雲端伺服器沒有 libGL / libgthread 等圖形函式庫，標準版 OpenCV 會 import 失敗。
-# 這裡在載入 ultralytics 之前，先把標準版換成 headless 版，確保一定能用。
-import subprocess, sys, importlib
-def _ensure_headless_opencv():
-    try:
-        import cv2  # noqa: F401  # 能載入就不用處理
-        return
-    except Exception:
-        subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y",
-                        "opencv-python", "opencv-python-headless"], check=False)
-        subprocess.run([sys.executable, "-m", "pip", "install", "-q",
-                        "opencv-python-headless"], check=False)
-        importlib.invalidate_caches()
-_ensure_headless_opencv()
-
 # ── ① 載入 AI 套件 ──────────────────────────────────────────────
 # ultralytics 是 YOLOv8 的官方套件，YOLO 類別可以載入我們訓練好的模型
 from ultralytics import YOLO
