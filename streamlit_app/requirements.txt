@@ -1,8 +1,12 @@
 # Streamlit Cloud 部署所需套件
-# 註：不鎖 numpy / Python 版本，讓雲端（可能是 Python 3.14）自行解析可用的 wheel。
-#     現代 ultralytics (8.2+) 已支援 numpy 2.x。
+# 註：
+# 1) 不鎖 numpy / Python 版本，讓雲端（Python 3.14）自行解析可用 wheel。
+# 2) 用 opencv-python-headless 取代標準 OpenCV：無 GUI 依賴，
+#    避免雲端缺 libGL / libgthread 等系統庫的問題。列在 ultralytics 之後，
+#    讓它成為最終生效的 cv2。
 streamlit
-ultralytics
 torch
 torchvision
 pillow
+ultralytics
+opencv-python-headless
